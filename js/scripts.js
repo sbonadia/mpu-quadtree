@@ -103,7 +103,7 @@
       rotation = [currentAngle, currentAngle, currentAngle];
       
       // Computa as matrizes
-      var matrix = m4.projection(gl.canvas.clientWidth, gl.canvas.clientHeight, 400);
+      var matrix = m4.projection(gl.canvas.clientWidth, gl.canvas.clientHeight, 600);
       matrix = m4.translate(matrix, translation[0], translation[1], translation[2]);
       matrix = m4.xRotate(matrix, rotation[0]);
       matrix = m4.yRotate(matrix, rotation[1]);
@@ -115,7 +115,7 @@
 
       // Desenha Geometria.
       //var primitiveType = gl.TRIANGLES;
-      var primitiveType = gl.LINES;
+      var primitiveType = gl.POINTS;
       var offset = 0;
       gl.drawArrays(primitiveType, offset, totalPoints);
 
@@ -314,6 +314,7 @@
 
       for(let i=1; i<= totalPoints; i++){
          var vectorCoord = data[i].split(" ");
+         vectorCoord[2] = 0;// torna o objeto em 2D;
          var x = vectorCoord[0]*1;
          var y = vectorCoord[1]*1;
          var z = vectorCoord[2]*1;
@@ -324,7 +325,6 @@
           if(minX>x) minX = x;
           if(minY>y) minY = y;
           if(minZ>z) minZ = z;
-          vectorCoord[2] = 0; // torna o objeto em 2D;
           allObjects[i] = new objectData(i,vectorCoord , data[i+totalPoints*1].split(" "));
       }
       console.log("maxX: ", maxX,
@@ -347,15 +347,26 @@
 
       for(let i = 1; i<=totalPoints; i++){
         let vectorCoord = data[i].split(" ");
-          let m = new qtree.Point(vectorCoord[0], vectorCoord[1]);
+          //vectorCoord[2] = 0;// torna o objeto em 2D;
+          let m = new qtree.Point(vectorCoord[0], vectorCoord[1], vectorCoord[2]);
           qt.insert(m);
       }
       qt.drawline();
-      
+      var text = "> <b>boundary:</b> <br/>";
+      text += "maxX: "+ maxX + ", ";
+      text += "minX: "+ minX + ", ";
+      text += "maxY: "+ maxY + ", ";
+      text += "minY: "+ minY + ", ";
+
+      var debug = document.getElementById("info");
+      debug.innerHTML = text;
       console.log(qt);
     
     return (qt);
     
+  }
+  function displayInfo(msg,data){
+    document.getElementById("canvas")
   }
 
   function informFileBox() {

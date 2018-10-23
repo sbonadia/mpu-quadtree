@@ -9,10 +9,10 @@
 }(this, function(){
     "use script";
     class Point{ // pontos com propriedades x e y
-        constructor(x,y){
+        constructor(x,y,z){
             this.x = x;
             this.y = y;
-            this.z = 0.0;
+            this.z = z;
             this.w = 1.0;
         }
     }
@@ -69,7 +69,7 @@
     
 
     class QuadTree {
-        constructor(boundary, n, level){
+        constructor(boundary, n, level, error){
             this.boundary = boundary;
             this.capacity = n;
             this.points = [];
@@ -79,7 +79,11 @@
             this._support = 0.75;
             this.R = (Math.sqrt(Math.pow(this.boundary.w,2) + Math.pow(this.boundary.h,2))) * this._support;
             this.R1 = this.R;
+            this.error = error || 0.005;
             
+        }
+        evaluateError (){
+
         }
         subdivide(){
 

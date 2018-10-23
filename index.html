@@ -7,6 +7,7 @@
     <body>
         <h1>Implementação OpenGL</h1>
         <canvas id="canvas"></canvas>
+        <p id="info"></p>
           
           <!-- vertex shader -->
           <script id="3d-vertex-shader" type="x-shader/x-vertex">
@@ -20,7 +21,7 @@
             void main() {
               // Multiply the position by the matrix.
               gl_Position = u_matrix * a_position;
-              gl_PointSize = 1.0;
+              gl_PointSize = 1.1;
             
               // Pass the color to the fragment shader.
               v_color = a_color;
