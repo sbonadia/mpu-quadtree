@@ -44,16 +44,6 @@
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
     // envia os dados das cores da geometria para o buffer
     setColors(gl);
-
-    // converte radianos em angulo
-    function radToDeg(r) {
-      return r * 180 / Math.PI;
-    }
-    //converte angulo em radianos
-    function degToRad(d) {
-      return d * Math.PI / 180;
-    }
-
     // configurações iniciais do objeto X Y Z
     var translation = [440, 220, 0];
     var rotation = [0, 0, 0];
@@ -115,7 +105,8 @@
 
       // Desenha Geometria.
       //var primitiveType = gl.TRIANGLES;
-      var primitiveType = gl.POINTS;
+      var primitiveType = gl.LINES;
+      //var primitiveType = gl.POINTS;
       var offset = 0;
       gl.drawArrays(primitiveType, offset, totalPoints);
 
@@ -302,7 +293,7 @@
     }
 }
   function processDataFile(data){
-      totalPoints = data[0];
+      totalPoints = data[0]*1;
       let allObjects = {};
       
       var maxX=0;
@@ -325,8 +316,9 @@
           if(minX>x) minX = x;
           if(minY>y) minY = y;
           if(minZ>z) minZ = z;
-          allObjects[i] = new objectData(i,vectorCoord , data[i+totalPoints*1].split(" "));
+          allObjects[i] = new objectData(i,vectorCoord , [0.0,0.0,0.0,0.0]);
       }
+      
       console.log("maxX: ", maxX,
                   "minX: ", minX,
                   "maxZ: ", maxZ,
@@ -341,8 +333,12 @@
       } else {
         maxX = maxY;
       }
-
-      let boundary = new qtree.Rectangle(minX, minY, maxX, maxY);
+      let safet = .5;
+      minX-= safet;
+      maxX+= safet;
+      minY-= safet;
+      maxY+= safet;
+      let boundary = new qtree.Rectangle(minX, minY, maxX-minX, maxY-minY);
       let qt = new qtree.QuadTree(boundary, totalPoints, 0);
 
       for(let i = 1; i<=totalPoints; i++){
@@ -351,7 +347,7 @@
           let m = new qtree.Point(vectorCoord[0], vectorCoord[1], vectorCoord[2]);
           qt.insert(m);
       }
-      qt.drawline();
+      qt.collectPoints();
       var text = "> <b>boundary:</b> <br/>";
       text += "maxX: "+ maxX + ", ";
       text += "minX: "+ minX + ", ";
@@ -366,14 +362,24 @@
     
   }
   function displayInfo(msg,data){
-    document.getElementById("canvas")
+    document.getElementById("canvas");
   }
 
   function informFileBox() {
       var file_name = prompt("Qual o arquivo deseja abrir? ", "2torus");
       if (file_name != null) {
         loadExternalTextFile(file_name)
+      } else {
+        loadInternalText()
       }
+  }
+  function loadInternalText(){
+    let text = drawCircle(10);
+    //console.log(text);
+    let lines = text.split("\n"); // Will separate each line into an array
+    //console.log(lines);
+    objectsAll = processDataFile(lines);
+    main(); 
   }
   function loadExternalTextFile(file_name){
       var txtFile = new XMLHttpRequest();
@@ -383,27 +389,48 @@
           if (txtFile.readyState === 4) {  // Makes sure the document is ready to parse.
               if (txtFile.status === 200) {  // Makes sure it's found the file.
                   let allText = txtFile.responseText;
-                  
                   let lines = txtFile.responseText.split("\n"); // Will separate each line into an array
                   objectsAll = processDataFile(lines);
-                  main();
-                 
-                  return {
-                    objectsAll:objectsAll
-                  }
+                  main(); 
               }
           }
       }
       txtFile.send(null);
-      
   }
-  
+  // converte radianos em angulo
+  function radToDeg(r) {
+    return r * 180 / Math.PI;
+  }
+  //converte angulo em radianos
+  function degToRad(d) {
+    return d * Math.PI / 180;
+  }
+  function drawCircle(radius){
+    let text = "360\n";
+    var x;
+    var y;
+    //text += "-10 -10 " + "0.0\n";
+    //text += "10 -10 " + "0.0\n";
+    //text += "10 -10 " + "0.0\n";
+    //text += "10 10 " + "0.0\n";
+    //text += "10 10 " + "0.0\n";
+    //text += "-10 10 " + "0.0\n";
+    //text += "-10 10 " + "0.0\n";
+    //text += "-10 -10 " + "0.0\n";
+     for(var i = 0; i< 360; i++){
+        x = radius * Math.sin(degToRad(i)) + (.2*Math.random()-.2);
+        y = radius * Math.cos(degToRad(i)) + (.2*Math.random()-.2);
+        text += x + " " + y + " " + "0.0\n"
+     }
+     /*for(var i = 0; i< 360; i++){
+      text += "1.0" + " " + "1.0" + " " + "1.0\n"
+     }*/
+     return text;
+  }   
   function setGeometry(gl) {
-    //console.log(objectsAll.points);
     for (var obj in objectsAll.points) {
       positionVBO.push(objectsAll.points[obj]);
     }
-    //console.log(positionVBO);
     gl.bufferData(gl.ARRAY_BUFFER, convert32Bits(positionVBO), gl.STATIC_DRAW);
   }
   function setColors(gl) {
@@ -413,6 +440,7 @@
     gl.bufferData(gl.ARRAY_BUFFER, convert32BitsColor(colorVBO), gl.STATIC_DRAW);
   }
   informFileBox();
+
   return {
         main: main,
         playing:playing,
