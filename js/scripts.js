@@ -406,17 +406,17 @@
     return d * Math.PI / 180;
   }
   function drawCircle(radius){
-    let text = "360\n";
+    let text = "368\n";
     var x;
     var y;
-    //text += "-10 -10 " + "0.0\n";
-    //text += "10 -10 " + "0.0\n";
-    //text += "10 -10 " + "0.0\n";
-    //text += "10 10 " + "0.0\n";
-    //text += "10 10 " + "0.0\n";
-    //text += "-10 10 " + "0.0\n";
-    //text += "-10 10 " + "0.0\n";
-    //text += "-10 -10 " + "0.0\n";
+    text += "-10.3 -10.3 " + "0.0\n";
+    text += "10.3 -10.3 " + "0.0\n";
+    text += "10.3 -10.3 " + "0.0\n";
+    text += "10.3 10.3 " + "0.0\n";
+    text += "10.3 10.3 " + "0.0\n";
+    text += "-10.3 10.3 " + "0.0\n";
+    text += "-10.3 10.3 " + "0.0\n";
+    text += "-10.3 -10.3 " + "0.0\n";
      for(var i = 0; i< 360; i++){
         x = radius * Math.sin(degToRad(i)) + (.2*Math.random()-.2);
         y = radius * Math.cos(degToRad(i)) + (.2*Math.random()-.2);
