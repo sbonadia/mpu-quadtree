@@ -8,26 +8,7 @@
     }
 }(this, function(){
     "use script";
-    var topWindow = this;
     
-
-    function isInIFrame(w){
-        w = w || topWindow;
-        return w !== w.top;
-    }
-    if (!isInIFrame()) {
-        //console.log("%c%s", 'color:blue;font-weight:bold;', 'for more about webgl-utils.js see:');  // eslint-disable-line
-        //console.log("%c%s", 'color:blue;font-weight:bold;', 'http://webglfundamentals.org/webgl/lessons/webgl-boilerplate.html');  // eslint-disable-line
-    }
-    function error(msg) {
-        if (topWindow.console) {
-            if (topWindow.console.error) {
-            topWindow.console.error(msg);
-            } else if (topWindow.console.log) {
-            topWindow.console.log(msg);
-            }
-        }
-    }
     function compilerShader(gl, shaderSource, shaderType){
         var shader = gl.createShader(shaderType);
         gl.shaderSource(shader,shaderSource);

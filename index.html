@@ -15,11 +15,10 @@
             attribute vec4 a_color;
             
             uniform mat4 u_matrix;
-            
             varying vec4 v_color;
             
             void main() {
-              // Multiply the position by the matrix.
+              // Multiplica a posição pela matriz de transformação
               gl_Position = u_matrix * a_position;
               gl_PointSize = 1.1;
             
@@ -39,6 +38,7 @@
             }
           </script>
           <script src="./js/math.js"></script>
+          <script src="./js/utils/m4.js"></script>
           <script src="./js/utils/webgl-utils.js"></script>
           <script src="./js/utils/quadtree.js"></script>
           <script src="./js/scripts.js"></script>

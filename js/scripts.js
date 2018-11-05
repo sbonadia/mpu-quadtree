@@ -1,6 +1,6 @@
 (function(root, factory){
   if(typeof define === 'function' && define.amd){
-      define([], function(){
+      define(["webglUtils","qtree","m4"], function(){
           return factory.call(root);
       });
   } else {
@@ -12,15 +12,14 @@
   var objectsAll ={};
   var totalPoints = totalPoints;
   var canvas = document.getElementById("canvas");
-  
+  console.log(canvas);
   var gl = canvas.getContext("webgl");
   if (!gl) {
     return;
   }
-  function main(mdata) {
+  function main() {
     // pega WebGL context
     /** @type { HTMLCanvasElement } */
-   
     // configura GLSL program
     var program = webglUtils.createProgramFromScripts(gl, ["3d-vertex-shader", "3d-fragment-shader"]);
 
@@ -37,7 +36,6 @@
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     // envia os dados da geometria no buffer
     setGeometry(gl);
-    
     // cria um buffer para as cores
     var colorBuffer = gl.createBuffer();
     // vincula o buffer com ARRAY_BUFFER
@@ -49,7 +47,6 @@
     var rotation = [0, 0, 0];
     var scale = [15, 15, 15];
     var currentAngle = 0;
-
     // desenha a cena
     drawScene()
     //
@@ -57,6 +54,7 @@
 
     // Desena a cena
     function drawScene() {
+
       currentAngle += 0.01;
       webglUtils.resizeCanvasToDisplaySize(gl.canvas);
     
@@ -79,7 +77,7 @@
 
       // Bind the position buffer.
       gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
+      
       gl.vertexAttribPointer( positionLocation, 4, gl.FLOAT, false, 0, 0 );
 
       // Turn on the color attribute
@@ -93,209 +91,41 @@
       rotation = [currentAngle, currentAngle, currentAngle];
       
       // Computa as matrizes
-      var matrix = m4.projection(gl.canvas.clientWidth, gl.canvas.clientHeight, 600);
+      let aspect = gl.canvas.clientWidth/gl.canvas.clientHeight
+      //TODO: implementar matriz perspectiva, câmera e luz
+      //var matrix = m4.perspective(fov,aspect,near,far);
+      var matrix = m4.projection(gl.canvas.clientWidth,gl.canvas.clientHeight,500); // projeção temporária
       matrix = m4.translate(matrix, translation[0], translation[1], translation[2]);
       matrix = m4.xRotate(matrix, rotation[0]);
       matrix = m4.yRotate(matrix, rotation[1]);
       matrix = m4.zRotate(matrix, rotation[2]);
       matrix = m4.scale(matrix, scale[0], scale[1], scale[2]);
 
-      // configura Matriz uniforme.
+      // configura Matriz de transformação.
       gl.uniformMatrix4fv(matrixLocation, false, matrix);
 
       // Desenha Geometria.
       //var primitiveType = gl.TRIANGLES;
+      //var primitiveType = gl.LINE_STRIP;
       var primitiveType = gl.LINES;
       //var primitiveType = gl.POINTS;
       var offset = 0;
-      gl.drawArrays(primitiveType, offset, totalPoints);
+      //gl.drawArrays(primitiveType, offset, totalPoints);
 
+      // gl.bindBuffer(gl.ARRAY_BUFFER, positionRectanglesBuffer);
+      gl.drawArrays(primitiveType, offset, totalPoints);
+      
       window.requestAnimationFrame(drawScene);
     }
   }
-  
-  var m4 = {
 
-    projection: function(width, height, depth) {
-      // Note: This matrix flips the Y axis so 0 is at the top.
-      return [
-        2 / width, 0, 0, 0,
-        0, -2 / height, 0, 0,
-        0, 0, 2 / depth, 0,
-        -1, 1, 0, 1,
-      ];
-    },
+  //console.log(m4);
 
-    multiply: function(a, b) {
-      var a00 = a[0 * 4 + 0];
-      var a01 = a[0 * 4 + 1];
-      var a02 = a[0 * 4 + 2];
-      var a03 = a[0 * 4 + 3];
-      var a10 = a[1 * 4 + 0];
-      var a11 = a[1 * 4 + 1];
-      var a12 = a[1 * 4 + 2];
-      var a13 = a[1 * 4 + 3];
-      var a20 = a[2 * 4 + 0];
-      var a21 = a[2 * 4 + 1];
-      var a22 = a[2 * 4 + 2];
-      var a23 = a[2 * 4 + 3];
-      var a30 = a[3 * 4 + 0];
-      var a31 = a[3 * 4 + 1];
-      var a32 = a[3 * 4 + 2];
-      var a33 = a[3 * 4 + 3];
-      var b00 = b[0 * 4 + 0];
-      var b01 = b[0 * 4 + 1];
-      var b02 = b[0 * 4 + 2];
-      var b03 = b[0 * 4 + 3];
-      var b10 = b[1 * 4 + 0];
-      var b11 = b[1 * 4 + 1];
-      var b12 = b[1 * 4 + 2];
-      var b13 = b[1 * 4 + 3];
-      var b20 = b[2 * 4 + 0];
-      var b21 = b[2 * 4 + 1];
-      var b22 = b[2 * 4 + 2];
-      var b23 = b[2 * 4 + 3];
-      var b30 = b[3 * 4 + 0];
-      var b31 = b[3 * 4 + 1];
-      var b32 = b[3 * 4 + 2];
-      var b33 = b[3 * 4 + 3];
-      return [
-        b00 * a00 + b01 * a10 + b02 * a20 + b03 * a30,
-        b00 * a01 + b01 * a11 + b02 * a21 + b03 * a31,
-        b00 * a02 + b01 * a12 + b02 * a22 + b03 * a32,
-        b00 * a03 + b01 * a13 + b02 * a23 + b03 * a33,
-        b10 * a00 + b11 * a10 + b12 * a20 + b13 * a30,
-        b10 * a01 + b11 * a11 + b12 * a21 + b13 * a31,
-        b10 * a02 + b11 * a12 + b12 * a22 + b13 * a32,
-        b10 * a03 + b11 * a13 + b12 * a23 + b13 * a33,
-        b20 * a00 + b21 * a10 + b22 * a20 + b23 * a30,
-        b20 * a01 + b21 * a11 + b22 * a21 + b23 * a31,
-        b20 * a02 + b21 * a12 + b22 * a22 + b23 * a32,
-        b20 * a03 + b21 * a13 + b22 * a23 + b23 * a33,
-        b30 * a00 + b31 * a10 + b32 * a20 + b33 * a30,
-        b30 * a01 + b31 * a11 + b32 * a21 + b33 * a31,
-        b30 * a02 + b31 * a12 + b32 * a22 + b33 * a32,
-        b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33,
-      ];
-    },
-
-    translation: function(tx, ty, tz) {
-      return [
-        1,  0,  0,  0,
-        0,  1,  0,  0,
-        0,  0,  1,  0,
-        tx, ty, tz, 1,
-      ];
-    },
-
-    xRotation: function(angleInRadians) {
-      var c = Math.cos(angleInRadians);
-      var s = Math.sin(angleInRadians);
-
-      return [
-        1, 0, 0, 0,
-        0, c, s, 0,
-        0, -s, c, 0,
-        0, 0, 0, 1,
-      ];
-    },
-
-    yRotation: function(angleInRadians) {
-      var c = Math.cos(angleInRadians);
-      var s = Math.sin(angleInRadians);
-
-      return [
-        c, 0, -s, 0,
-        0, 1, 0, 0,
-        s, 0, c, 0,
-        0, 0, 0, 1,
-      ];
-    },
-
-    zRotation: function(angleInRadians) {
-      var c = Math.cos(angleInRadians);
-      var s = Math.sin(angleInRadians);
-
-      return [
-        c, s, 0, 0,
-        -s, c, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1,
-      ];
-    },
-
-    scaling: function(sx, sy, sz) {
-      return [
-        sx, 0,  0,  0,
-        0, sy,  0,  0,
-        0,  0, sz,  0,
-        0,  0,  0,  1,
-      ];
-    },
-
-    translate: function(m, tx, ty, tz) {
-      return m4.multiply(m, m4.translation(tx, ty, tz));
-    },
-
-    xRotate: function(m, angleInRadians) {
-      return m4.multiply(m, m4.xRotation(angleInRadians));
-    },
-
-    yRotate: function(m, angleInRadians) {
-      return m4.multiply(m, m4.yRotation(angleInRadians));
-    },
-
-    zRotate: function(m, angleInRadians) {
-      return m4.multiply(m, m4.zRotation(angleInRadians));
-    },
-
-    scale: function(m, sx, sy, sz) {
-      return m4.multiply(m, m4.scaling(sx, sy, sz));
-    },
-
-  };
-
-  var positionVBO =[];
-  var colorVBO = [];
-
-  function convert32Bits(arr){
-    var arr32 = new Float32Array(arr.length*4);
-    var count = 0;
-    for(var i=0; i<arr.length; i++){
-      let temp = [arr[i].x,arr[i].y,arr[i].z,arr[i].w];
-      for(var k=0; k<4; k++){
-        arr32[count] = temp[k];
-        //console.log(count, ' -- > ', arr32[count]);
-        count++;
-      }
-    }
-    
-    return arr32;
-  } 
-  function convert32BitsColor(arr){
-    var arr32 = new Float32Array(arr.length*4);
-    var count = 0;
-    for(var i=0; i<arr.length; i++){
-      for(var j = 0; j < 4; j++){
-        arr32[count] = arr[i][j];
-        count++;  
-      }
-      
-    }
-    return arr32;
-  } 
-
-  class objectData{
-    constructor(id, coord, normal){
-      this.id = id;
-      this.coord = coord;
-      this.normal = normal;
-    }
-}
+  // Processa dados do TXT
   function processDataFile(data){
-      totalPoints = data[0]*1;
-      let allObjects = {};
-      
+      //captura quantidade de pontos dada na primeira linha do conjunto de dados
+      totalPoints = data[0]*1; 
+      // inicia variáveis de limites máx e min dos eixos X Y Z
       var maxX=0;
       var maxY=0;
       var maxZ=0;
@@ -303,6 +133,7 @@
       var minY=0;
       var minZ=0;
 
+      // looping que percorre as linhas e monta o vetor de pontos
       for(let i=1; i<= totalPoints; i++){
          var vectorCoord = data[i].split(" ");
          vectorCoord[2] = 0;// torna o objeto em 2D;
@@ -310,19 +141,20 @@
          var y = vectorCoord[1]*1;
          var z = vectorCoord[2]*1;
           vectorCoord.push("1.0");
+          // atualiza variáveis de limites
           if(maxX<x) maxX = x;
           if(maxY<y) maxY = y;
           if(maxZ<z) maxZ = z;
           if(minX>x) minX = x;
           if(minY>y) minY = y;
           if(minZ>z) minZ = z;
-          allObjects[i] = new objectData(i,vectorCoord , [0.0,0.0,0.0,0.0]);
       }
-      
       console.log("maxX: ", maxX,
                   "minX: ", minX,
                   "maxZ: ", maxZ,
                   "minZ", minZ);
+
+      //  armazena maior valor para montagem nos limites do quadrado
       if(minX<minY) {
         minY = minX;
       } else {
@@ -333,38 +165,41 @@
       } else {
         maxX = maxY;
       }
+      // adiciona espaço ao redor do limites da figura
       let safet = .5;
-      minX-= safet;
-      maxX+= safet;
-      minY-= safet;
-      maxY+= safet;
+      minX-= safet; maxX+= safet; minY-= safet; maxY+= safet;
+      //cria as bordas do QuadTree
       let boundary = new qtree.Rectangle(minX, minY, maxX-minX, maxY-minY);
+      // Inicia o QuadTree
       let qt = new qtree.QuadTree(boundary, totalPoints, 0);
-
+      //qt.callPoints();
+      // Adiciona os pontos ao qt
       for(let i = 1; i<=totalPoints; i++){
         let vectorCoord = data[i].split(" ");
-          //vectorCoord[2] = 0;// torna o objeto em 2D;
           let m = new qtree.Point(vectorCoord[0], vectorCoord[1], vectorCoord[2]);
           qt.insert(m);
       }
-      qt.collectPoints();
+      // coleta os pontos do qt para processar os MPUs
+      qt.collectPoints(qt);
+
+      // coleta pontos para que delimitam os quadrantes do QuadTree.
+      var rect = qt.arrayBoundary_fn(); // teste
+
+      // imprime na tela os valores dos limites da figura
       var text = "> <b>boundary:</b> <br/>";
       text += "maxX: "+ maxX + ", ";
       text += "minX: "+ minX + ", ";
       text += "maxY: "+ maxY + ", ";
       text += "minY: "+ minY + ", ";
-
       var debug = document.getElementById("info");
       debug.innerHTML = text;
       console.log(qt);
-    
+      qt.rect = rect; // adiciona coordenadas dos retangulos como propriedades do objeto qt
+      //retorna objeto qt para montagem do VBO
     return (qt);
     
   }
-  function displayInfo(msg,data){
-    document.getElementById("canvas");
-  }
-
+  // recebe valor e direciona carregamento
   function informFileBox() {
       var file_name = prompt("Qual o arquivo deseja abrir? ", "2torus");
       if (file_name != null) {
@@ -373,14 +208,14 @@
         loadInternalText()
       }
   }
+  // carrega dados internos do círculo
   function loadInternalText(){
     let text = drawCircle(10);
-    //console.log(text);
-    let lines = text.split("\n"); // Will separate each line into an array
-    //console.log(lines);
-    objectsAll = processDataFile(lines);
+    let lines = text.split("\n"); // separa linhas e insere no Vetor
+    objectsAll = processDataFile(lines); // processa dados e monta no objeto
     main(); 
   }
+  //carrega arquivo de dados externo
   function loadExternalTextFile(file_name){
       var txtFile = new XMLHttpRequest();
       var name = "data/"+file_name+".pwn" || "data/2torus.pwn";
@@ -405,42 +240,68 @@
   function degToRad(d) {
     return d * Math.PI / 180;
   }
+  // Desenha Circulo caso cancele o carregamento do arquivo externo
   function drawCircle(radius){
-    let text = "368\n";
+    
+    let text = "360\n";
     var x;
     var y;
-    text += "-10.3 -10.3 " + "0.0\n";
-    text += "10.3 -10.3 " + "0.0\n";
-    text += "10.3 -10.3 " + "0.0\n";
-    text += "10.3 10.3 " + "0.0\n";
-    text += "10.3 10.3 " + "0.0\n";
-    text += "-10.3 10.3 " + "0.0\n";
-    text += "-10.3 10.3 " + "0.0\n";
-    text += "-10.3 -10.3 " + "0.0\n";
+    
      for(var i = 0; i< 360; i++){
         x = radius * Math.sin(degToRad(i)) + (.2*Math.random()-.2);
         y = radius * Math.cos(degToRad(i)) + (.2*Math.random()-.2);
         text += x + " " + y + " " + "0.0\n"
      }
-     /*for(var i = 0; i< 360; i++){
-      text += "1.0" + " " + "1.0" + " " + "1.0\n"
-     }*/
      return text;
-  }   
+  }
+  var positionVBO =[];
+  var colorVBO = [];
+
+  // converte dados do VBO de posição para 32bits
+  function convert32Bits(arr){
+    var arr32 = new Float32Array(arr.length*4);
+    var count = 0;
+    for(var i=0; i<arr.length; i++){
+      let temp = [arr[i].x,arr[i].y,arr[i].z,arr[i].w];
+      for(var k=0; k<4; k++){
+        arr32[count] = temp[k];
+        //console.log(count, ' -- > ', arr32[count]);
+        count++;
+      }
+    }
+    
+    return arr32;
+  } 
+  // converte dados do VBO de cores para 32bits
+  function convert32BitsColor(arr){
+    var arr32 = new Float32Array(arr.length*4);
+    var count = 0;
+    for(var i=0; i<arr.length; i++){
+      for(var j = 0; j < 4; j++){
+        arr32[count] = arr[i][j];
+        count++;  
+      }
+      
+    }
+    return arr32;
+  } 
+  // monta o objeto geometrico no VBO
   function setGeometry(gl) {
     for (var obj in objectsAll.points) {
       positionVBO.push(objectsAll.points[obj]);
     }
     gl.bufferData(gl.ARRAY_BUFFER, convert32Bits(positionVBO), gl.STATIC_DRAW);
   }
+  
   function setColors(gl) {
     for (var obj in objectsAll.points) {
       colorVBO.push( [0.0,0.0, 1.0, 1.0] );
     }
     gl.bufferData(gl.ARRAY_BUFFER, convert32BitsColor(colorVBO), gl.STATIC_DRAW);
   }
-  informFileBox();
-
+  // inicia aplicação a caixa de diálogo
+  informFileBox(); 
+  
   return {
         main: main,
         playing:playing,
