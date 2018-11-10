@@ -181,9 +181,12 @@
       }
       // coleta os pontos do qt para processar os MPUs
       qt.collectPoints(qt);
-
+      var ms = new marchsquare.MarchingSquare(minX,minY,maxX,maxY,128);
+      var pts = ms.render();
+      qt.points = pts;
+      //console.log(pts);
       // coleta pontos para que delimitam os quadrantes do QuadTree.
-      var rect = qt.arrayBoundary_fn(); // teste
+      //var rect = qt.arrayBoundary_fn(); // teste
 
       // imprime na tela os valores dos limites da figura
       var text = "> <b>boundary:</b> <br/>";
@@ -194,7 +197,7 @@
       var debug = document.getElementById("info");
       debug.innerHTML = text;
       console.log(qt);
-      qt.rect = rect; // adiciona coordenadas dos retangulos como propriedades do objeto qt
+      //qt.rect = rect; // adiciona coordenadas dos retangulos como propriedades do objeto qt
       //retorna objeto qt para montagem do VBO
     return (qt);
     
@@ -213,6 +216,7 @@
     let text = drawCircle(10);
     let lines = text.split("\n"); // separa linhas e insere no Vetor
     objectsAll = processDataFile(lines); // processa dados e monta no objeto
+    totalPoints = objectsAll.points.length;
     main(); 
   }
   //carrega arquivo de dados externo
@@ -242,14 +246,13 @@
   }
   // Desenha Circulo caso cancele o carregamento do arquivo externo
   function drawCircle(radius){
-    
     let text = "360\n";
     var x;
     var y;
-    
-     for(var i = 0; i< 360; i++){
+    for(var i = 0; i< 360; i++){
         x = radius * Math.sin(degToRad(i)) + (.2*Math.random()-.2);
         y = radius * Math.cos(degToRad(i)) + (.2*Math.random()-.2);
+        
         text += x + " " + y + " " + "0.0\n"
      }
      return text;

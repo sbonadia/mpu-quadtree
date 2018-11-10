@@ -10,10 +10,10 @@
     "use script";
     class Point{ // pontos com propriedades x e y
         constructor(x,y,z){
-            this.x = x;
-            this.y = y;
+            this.x = Number(x);
+            this.y = Number(y);
             this.peso;
-            this.z = z;
+            this.z = Number(z);
             this.w = 1.0;
         }
         calcularPeso(){
@@ -21,17 +21,33 @@
         }
     }
     class Rectangle{ // retângulo que delimita a divisão dos subdomínio
-        constructor(x,y,w,h,R,_support,level){
+        constructor(x,y,w,h,level,R,_support){
             this.x = x; 
             this.y = y;
             this.w = w;
             this.h = h;
+            this._support = _support || .75;
+            this.R = (Math.sqrt(Math.pow(this.w,2) + Math.pow(this.h,2))) * this._support; // raio d círculo de suporte = diagonal do nó;
+            this.level = level;
         }
-        contains(point){ // verifica se ponto está contido em quadrante
-            return(point.x >= this.x &&
-                point.x <= this.x+this.w &&
-                point.y >= this.y &&
-                point.y <= this.y+this.h);
+        contains(point, R=this.R){ // verifica se ponto está contido em quadrante
+            var cx = this.x + this.w/2;
+            var cy = this.y + this.h/2;
+
+            var vx = point.x - cx;
+            var vy = point.y - cy;
+
+            var d = Math.sqrt(vx*vx + vy*vy)
+
+            return ( d < R );
+
+            // ############## Não usado
+            // console.log(" >> testa pontos no Raio", this);
+            
+            // return(point.x >= this.x &&
+            //     point.x <= this.x+this.w &&
+            //     point.y >= this.y &&
+            //     point.y <= this.y+this.h);
         }
     }
     
@@ -42,54 +58,60 @@
             this.points = [];           // pontos dentro do nó
             this.level = level;         // nível do nó na árvore
             this.leaf = true;           // flag para identificar nó folha
-            this._Nmin = 10;            // quantidade mínima de pontos no nó
+            this._Nmin = 15;            // quantidade mínima de pontos no nó
             this._lambda = 0.1;         // fator de incremento para englobar mais pontos
             this._support = 0.75;       // tamanho do raio do circulo de suporte. 75% da diagonal do nó
             this.R = (Math.sqrt(Math.pow(this.boundary.w,2) + Math.pow(this.boundary.h,2))) * this._support; // raio d círculo de suporte = diagonal do nó
             this.R1 = this.R;           // raio do círculo de incremento
-            this.error = error || 0.05; // taxa de erro. default = 0.005
+            this.cX = this.boundary.x  + (this.boundary.w)/2; // calcula o X do centro
+            this.cY = this.boundary.y  + (this.boundary.h)/2; // calcula o Y do centro
+            this._parent = {};          // registra o pai
+            this.error = error || 0.1; // taxa de erro. default = 0.005
         }
-        arrayBoundary_fn(){
-            var arr = [];
-            this.callBoundaryPoints(this, arr);
-            return arr;            
-        }
-        callBoundaryPoints(t=this, arr=[]){
-            //console.log("--> " , t.northeast==undefined);
-            if(t.northeast){
-                arr.push( t.callBoundaryPoints(t.northeast, arr ) );
-            } 
-            if(t.northwest){
-                arr.push( t.callBoundaryPoints(t.northwest, arr) );
-            } 
-            if(t.southeast){
-                arr.push( t.callBoundaryPoints(t.southeast, arr) );
-            } 
-            if(this.southwest){
-                arr.push( t.callBoundaryPoints(t.southwest, arr) );
-            } 
-            return {
-                x0: t.boundary.x,
-                y0: t.boundary.y,
-                x1: (t.boundary.x+t.boundary.w),
-                y1: (t.boundary.y+t.boundary.w)
-            };
-            
-            //return  valor;
-            
-            
-            
-            
-        }
+        
         collectPoints (){  
             /* método para coletar pontos do nó e calcular erro */
-            if(this.points.length == 0) {
+            var _error = 0;
+            var _coef = [];
+            var f;
+            // console.log(
+            //     "this.points > ", this.points,
+            //     "this.R > ", this.R,
+            //     "this._parent > ", this._parent.points,                
+            // );
+            //for(var p in this.points){
+
+            //}
+            if(this.points.length == 0) {    
                 return;
             }
-            var _error = 0
-            if(this.points.length > this._Nmin){
-                _error = this.calcula_mmq();
-            } 
+            
+            if(this.points.length < this._Nmin ){
+                // procedimento para inclusão de novos pontos caso o 
+                // número de pontos seja menos do que o número mínimo
+                while( this.points.length < this._Nmin ){
+                    for(var p1 in this._parent.points) {
+                        if(this.boundary.contains( this._parent.points[p1], this.R1 )){
+                            var exist = false;
+                            for(var p0 in this.points) {
+                                if(this._parent.points[p1] == this.points[p0]) {
+                                    exist = true;
+                                    break;
+                                }
+                            }
+                            if(!exist) this.points.push(this._parent.points[p1]);
+                        }
+                    }
+                    this.R1 = this.R1 + this._lambda;
+                }
+                
+            }
+            if(this.level < 10){ // ### trava de segurança para evitar travamento
+                f = this.calcula_mmq();
+                _error = f._error;
+                _coef = f._coef._data;
+            }
+            
             //console.log("Quantidade de pontos  no recipiente: ", this.points.length );
             /*  Condição de Parada da Recursão  
                 Se o erro calculado for menos que limite e a quantidade de pontos
@@ -97,16 +119,17 @@
 
                 Caso contrário, a árvore se divide
             */
-           
+            //console.log(_error, " > " , this.error);
             if( _error > this.error) {
-                //console.log("Erro calculado ", _error , " # Erro limite: ", this.error);
                 this.leaf = false; // se tem subdivisão, não é folha
                this.subdivide();
             } else {
+                // console.log(    "_coef: ", _coef,
+                //                 "R: ", this.R);
                 //this.calcula_mmq();
                 //this.leaf = true;
                 /* aqui preciso fazer um método de regressão dos pontos em uma linha (dois pontos) */
-                //console.log(" Nó folha com ",this.points.length, " com erro de  >> ", _error);
+                console.log(" Nó folha com ",this.points.length, " com erro de  >> ", _error);
                 //console.log(_error ,">", this.error);
             }
         }
@@ -115,41 +138,85 @@
           // ############ TODO   
         }
         // metodo que calcula e retorna o erro máximo da regressão
+        calcula_pesos() {}
+        /*
+        weight ( index, x, y ){
+            var c = _center[index];
+            var vx = x - c[0];
+            var vy = y - c[1];
+            var r = Math.sqrt(vx*vx + vy*vy);
+            if(r > _support)
+                return 0;
+            r /= _support;
+            return (1-r)*(1-r);
+        }
+        value (x, y){
+            var f = 0;
+            for(var i=0; i<_centerN; i++)
+                f += ( _c0[i] + _cx[i]*x + _cy[i]*y ) * this.weight(i, x, y);
+            return f;
+        }
+        */
+
+        // Função que calcula curva da redução
+        f_value(points, a0,a1,a2,a3,a4,a5){
+            var result = [];
+            for(var p in points){
+                let x = points[p].x; 
+                let y = points[p].y; 
+                let r = a0 + 
+                        a1*x +
+                        a2*y +
+                        a3*x*y +
+                        a4*x*x +
+                        a5*y*y;
+                result.push(r);
+                //console.log(r, " : ", y );
+            }
+            
+            return result;
+        }
         calcula_mmq(){
             //console.log("################");
-            var A = math.zeros(this.points.length, 6);
-            var L = math.zeros(this.points.length, 1);
+            var A = math.zeros(this.points.length, 6); // define matriz de [n x 6]
+            var L = math.zeros(this.points.length, 1); // define matriz de [n x 1]
+
+            // Laço que percorre pontos para calcular os coeficientes
             for(var p =0; p<  this.points.length; p++){
                 var x = this.points[p].x;
                 var y = this.points[p].y;
+                // preenche a matriz A com os valores [ 1 , x , y , x*y , x^2 , y^2 ] para cada linha
                 A.subset(math.index(p, [0,1,2,3,4,5]), [1, x*1, y*1,x*y, x*x, y*y]);
-//                A.subset(math.index(p, [0,1,2]), [1, x*1, x*x]);  
-                L.subset(math.index(p, 0), y);  
+                // preenche a matriz L com o valor [ 0 ] para cada linha
+                L.subset(math.index(p, 0), .0000000000000001);
             }
-            var At = math.transpose(A);
-            //console.log("At: ", At);
-            var Ii = math.multiply(At,A);
-            //console.log("Ii: ", Ii);
-            var I = math.inv(Ii);
-            var E = math.multiply(I,At);
-            var a = math.multiply(E,L);
-            //console.log(a);
-            var result = [];
-            for(var p in this.points){
-                let x = this.points[p].x; 
-                let r = a.subset(math.index(0,0)) + 
-                        a.subset(math.index(1,0))*x +
-                        a.subset(math.index(2,0))*x*x;
-                result.push(r);
-            }
+            var At = math.transpose(A); // obtem a matriz transposta e armazena em At
+            var Ii = math.multiply(At,A); // multiplica At x A em armazena em Ii
+            var I = math.inv(Ii); // inverte Ii
+            var E = math.multiply(I,At); // multiplica a inversa pela transposta e armazena em E
+            var a = math.multiply(E,L); // multiplica E pela matriz com os valores de y e obtém a matriz de coeficientes
+            var _a = [  a.subset(math.index(0, 0)),
+                        a.subset(math.index(1, 0)),
+                        a.subset(math.index(2, 0)),
+                        a.subset(math.index(3, 0)),
+                        a.subset(math.index(4, 0)),
+                        a.subset(math.index(5, 0)),
+                     ]
+            // após conhecer os coeficientes, calcula valor da f(x,y) como os valores de cada ponto
+            // ao substituir com os valores de cada ponto do subdomínio
+            var result = this.f_value(this.points,_a[0],_a[1],_a[2],_a[3],_a[4],_a[5]);
+            // método para 
             var _maxerror = 0;
             for(var p in this.points){
-                let y = this.points[p].y; 
-                let e = result[p] - y;
-                _maxerror = (_maxerror < e ) ? _maxerror : e;
+                let r = result[p];
+                let e = r - this.points[p].y;
+                _maxerror = ( e > _maxerror ) ? e: Math.abs(_maxerror);
             }
-            //console.log(_maxerror);
-            return Math.abs(_maxerror);
+            //retorna erro calculado e coeficientes da redução
+            return {    
+                        _error  : _maxerror,
+                        _coef   : a
+                    }
 
         }
         subdivide(){
@@ -161,16 +228,16 @@
             
             this.level = this.level + 1;
 
-            let ne = new Rectangle(x + w, y + h, w, h);
+            let ne = new Rectangle(x + w, y + h, w, h, this.level,this.R, this._support);
             this.northeast = new QuadTree(ne, this.capacity,this.level);
             
-            let nw = new Rectangle(x, y + h, w, h);
+            let nw = new Rectangle(x, y + h, w, h, this.level, this.R, this._support);
             this.northwest = new QuadTree(nw, this.capacity,this.level);
             
-            let se = new Rectangle(x + w, y, w, h);
+            let se = new Rectangle(x + w, y, w, h, this.level, this.R, this._support);
             this.southeast = new QuadTree(se, this.capacity,this.level);
             
-            let sw = new Rectangle(x, y, w, h);
+            let sw = new Rectangle(x, y, w, h, this.level, this.R, this._support);
             this.southwest = new QuadTree(sw, this.capacity,this.level);
 
             //loop para distribuir os pontos nos respectivos nós
@@ -180,12 +247,19 @@
                 //let n = this.points.pop();
                 var n = this.points[t];
                 if(this.northeast.boundary.contains(n)){
+                    this.northeast._parent = this;
                     this.northeast.points.push(n);
-                } else if(this.northwest.boundary.contains(n)){
+                } 
+                if(this.northwest.boundary.contains(n)){
+                    this.northwest._parent = this;
                     this.northwest.points.push(n);
-                } else if(this.southeast.boundary.contains(n)){
+                } 
+                if(this.southeast.boundary.contains(n)){
+                    this.southeast._parent = this;
                     this.southeast.points.push(n);
-                } else if(this.southwest.boundary.contains(n)){
+                } 
+                if(this.southwest.boundary.contains(n)){
+                    this.southwest._parent = this;
                     this.southwest.points.push(n);
 
                 }
