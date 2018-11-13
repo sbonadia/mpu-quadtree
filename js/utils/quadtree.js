@@ -12,7 +12,7 @@
         constructor(x,y,z){
             this.x = Number(x);
             this.y = Number(y);
-            this.peso;
+            this.peso = 0;
             this.z = Number(z);
             this.w = 1.0;
         }
@@ -67,6 +67,9 @@
             this.cY = this.boundary.y  + (this.boundary.h)/2; // calcula o Y do centro
             this._parent = {};          // registra o pai
             this.error = error || 0.1; // taxa de erro. default = 0.005
+            this.coefs = [];
+            this.weight = 0;
+
         }
         
         collectPoints (){  
@@ -82,6 +85,7 @@
             //for(var p in this.points){
 
             //}
+            //console.log('### ', this);
             if(this.points.length == 0) {    
                 return;
             }
@@ -106,11 +110,12 @@
                 }
                 
             }
-            if(this.level < 10){ // ### trava de segurança para evitar travamento
+            //if(this.level < 5){ // ### trava de segurança para evitar travamento
                 f = this.calcula_mmq();
                 _error = f._error;
-                _coef = f._coef._data;
-            }
+                _coef = f._coef;
+                //console.log('>> ', _coef)
+            //}
             
             //console.log("Quantidade de pontos  no recipiente: ", this.points.length );
             /*  Condição de Parada da Recursão  
@@ -120,17 +125,21 @@
                 Caso contrário, a árvore se divide
             */
             //console.log(_error, " > " , this.error);
-            if( _error > this.error) {
+            if( _error > this.error && this.level < 5) {
                 this.leaf = false; // se tem subdivisão, não é folha
                this.subdivide();
             } else {
-                // console.log(    "_coef: ", _coef,
+                //console.log(    "_coef: ", _coef,
                 //                 "R: ", this.R);
+                this.coefs = _coef;
+                
+                //console.log(this.points);
                 //this.calcula_mmq();
                 //this.leaf = true;
                 /* aqui preciso fazer um método de regressão dos pontos em uma linha (dois pontos) */
-                console.log(" Nó folha com ",this.points.length, " com erro de  >> ", _error);
+                //console.log(" Nó folha com ",this.points.length, " com erro de  >> ", _coef);
                 //console.log(_error ,">", this.error);
+                //return funcPeso //Retorna o vetor com peso e função
             }
         }
         // metodo para calcular a reta e retornar os pontos
@@ -138,28 +147,9 @@
           // ############ TODO   
         }
         // metodo que calcula e retorna o erro máximo da regressão
-        calcula_pesos() {}
-        /*
-        weight ( index, x, y ){
-            var c = _center[index];
-            var vx = x - c[0];
-            var vy = y - c[1];
-            var r = Math.sqrt(vx*vx + vy*vy);
-            if(r > _support)
-                return 0;
-            r /= _support;
-            return (1-r)*(1-r);
-        }
-        value (x, y){
-            var f = 0;
-            for(var i=0; i<_centerN; i++)
-                f += ( _c0[i] + _cx[i]*x + _cy[i]*y ) * this.weight(i, x, y);
-            return f;
-        }
-        */
 
         // Função que calcula curva da redução
-        f_value(points, a0,a1,a2,a3,a4,a5){
+        f_value( points, a0, a1 ,a2 ,a3 ,a4 ,a5 ){
             var result = [];
             for(var p in points){
                 let x = points[p].x; 
@@ -188,13 +178,18 @@
                 // preenche a matriz A com os valores [ 1 , x , y , x*y , x^2 , y^2 ] para cada linha
                 A.subset(math.index(p, [0,1,2,3,4,5]), [1, x*1, y*1,x*y, x*x, y*y]);
                 // preenche a matriz L com o valor [ 0 ] para cada linha
-                L.subset(math.index(p, 0), .0000000000000001);
+                L.subset(math.index(p, 0),0);
             }
             var At = math.transpose(A); // obtem a matriz transposta e armazena em At
             var Ii = math.multiply(At,A); // multiplica At x A em armazena em Ii
-            var I = math.inv(Ii); // inverte Ii
-            var E = math.multiply(I,At); // multiplica a inversa pela transposta e armazena em E
-            var a = math.multiply(E,L); // multiplica E pela matriz com os valores de y e obtém a matriz de coeficientes
+            var Id = math.identity(6); // cria matriz identidade [ 6 x 6 ]
+            var mId = math.multiply(Id,10);
+            var sAtA = math.add(mId, Ii);
+            
+            var I = math.inv(sAtA); // inverte Ii
+            
+            var E = math.multiply(At,L); // multiplica a inversa pela transposta e armazena em E
+            var a = math.multiply(I,E); // multiplica E pela matriz com os valores de y e obtém a matriz de coeficientes
             var _a = [  a.subset(math.index(0, 0)),
                         a.subset(math.index(1, 0)),
                         a.subset(math.index(2, 0)),
@@ -204,7 +199,7 @@
                      ]
             // após conhecer os coeficientes, calcula valor da f(x,y) como os valores de cada ponto
             // ao substituir com os valores de cada ponto do subdomínio
-            var result = this.f_value(this.points,_a[0],_a[1],_a[2],_a[3],_a[4],_a[5]);
+            var result = this.f_value( this.points, _a[0], _a[1], _a[2], _a[3], _a[4], _a[5] );
             // método para 
             var _maxerror = 0;
             for(var p in this.points){
@@ -215,7 +210,7 @@
             //retorna erro calculado e coeficientes da redução
             return {    
                         _error  : _maxerror,
-                        _coef   : a
+                        _coef   : _a
                     }
 
         }
@@ -273,6 +268,70 @@
             
             this.divided = true;
 
+        }
+        getGlobalFunction(){
+            if (this.leaf){
+                var a = this._coef;
+                 return a;
+             } else {
+                //smath.add(mId, Ii);
+                //var sum = math.zeros(6, 1);
+                var sum = [0,0,0,0,0,0];
+                 var WNE = this.northeast.getGlobalFunction() || [0,0,0,0,0,0];
+                 var WNW = this.northwest.getGlobalFunction() || [0,0,0,0,0,0];
+                 var WSE = this.southeast.getGlobalFunction() || [0,0,0,0,0,0];
+                 var WSW = this.southwest.getGlobalFunction() || [0,0,0,0,0,0];
+                 for(var i=0; i<sum.length; i++){
+                    sum[i] = WNE[i]+WNW[i]+WSE[i]+WSW[i]
+                 }
+                 //math.add(sum, WNE);
+                 //math.add(WNE, WNW);
+                 //math.add(WNW, WSE);
+                 //smath.add(WSE, WSW);
+                 return (sum);
+             }
+        }
+        
+        setLocalWeight(point) {
+            var bspline = (15/16)*(1-this.R1*this.R1);
+            return bspline*(3/2*this.R1)*(Math.pow(point.x - this.cX,2)+Math.pow(point.y - this.cY,2)); 
+        }
+        getLocalWeight(point){
+            if(!this.boundary.contains(point)){
+                return;
+            }; 
+            if (this.leaf){
+                var w = this.setLocalWeight(point);
+                return w;
+                return "função do nó: " + this.nivel;
+            } else {
+                if(this.northeast.boundary.contains(point)){
+                    return this.northeast.getLocalWeight(point);
+                } 
+                if(this.northwest.boundary.contains(point)){
+                    return this.northwest.getLocalWeight(point);
+                } 
+                if(this.southeast.boundary.contains(point)){
+                    return this.southeast.getLocalWeight(point);
+                } 
+                if(this.southwest.boundary.contains(point)){
+                    return this.southwest.getLocalWeight(point);
+
+                }
+            
+            }
+        }
+        getGlobalWeight(point){ 
+            if (this.leaf){
+               var w = this.setLocalWeight(point);
+                return w;
+            } else {
+                var WNE = this.northeast.getGlobalWeight(point);
+                var WNW = this.northwest.getGlobalWeight(point);
+                var WSE = this.southeast.getGlobalWeight(point);
+                var WSW = this.southwest.getGlobalWeight(point);
+                return (WNE + WNW + WSE + WSW);
+            }
         }
         insert(point){ 
             if(!this.boundary.contains(point)){

@@ -182,7 +182,7 @@
       // coleta os pontos do qt para processar os MPUs
       qt.collectPoints(qt);
       var ms = new marchsquare.MarchingSquare(minX,minY,maxX,maxY,128);
-      var pts = ms.render();
+      var pts = ms.render(qt);
       qt.points = pts;
       //console.log(pts);
       // coleta pontos para que delimitam os quadrantes do QuadTree.
