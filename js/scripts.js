@@ -298,7 +298,7 @@
   
   function setColors(gl) {
     for (var obj in objectsAll.points) {
-      colorVBO.push( [0.0,0.0, 1.0, 1.0] );
+      colorVBO.push( [0.0,1.0, 1.0, 1.0] );
     }
     gl.bufferData(gl.ARRAY_BUFFER, convert32BitsColor(colorVBO), gl.STATIC_DRAW);
   }

@@ -1,6 +1,7 @@
 (function(root, factory){
     if(typeof define === 'function' && define.amd){
-        define(["math"], function(){
+        define(["math","lalolib"], function(){
+            math.import(numeric, { wrap: true, silent: true })
             return factory.call(root);
         });
     } else {
@@ -181,22 +182,35 @@
                 L.subset(math.index(p, 0),0);
             }
             var At = math.transpose(A); // obtem a matriz transposta e armazena em At
-            var Ii = math.multiply(At,A); // multiplica At x A em armazena em Ii
-            var Id = math.identity(6); // cria matriz identidade [ 6 x 6 ]
-            var mId = math.multiply(Id,10);
-            var sAtA = math.add(mId, Ii);
+            var S = math.multiply(At,A); // multiplica At x A em armazena em Ii
+            var Sa = S._data;
+            var Rv = ones(6,6)
+            var count = 0;
+            for(var i=0; i< Sa.length;i++){
+                for(var j=0; j< Sa.length;j++){
+                    Rv.val[count] = Sa[i][j];
+                    count ++;
+                }
+            }
+            var a = eigs(Rv,1,true);
+            //var Id = math.identity(6); // cria matriz identidade [ 6 x 6 ]
+            //var mId = math.multiply(Id,0); // multiplica Identidade por menor autovalor
+            //var sAtA = math.subtract(S,mId); // subtrai At*A de identidade
             
-            var I = math.inv(sAtA); // inverte Ii
+            //var I = math.inv(sAtA); // inverte sAtA
             
-            var E = math.multiply(At,L); // multiplica a inversa pela transposta e armazena em E
-            var a = math.multiply(I,E); // multiplica E pela matriz com os valores de y e obtém a matriz de coeficientes
-            var _a = [  a.subset(math.index(0, 0)),
-                        a.subset(math.index(1, 0)),
-                        a.subset(math.index(2, 0)),
-                        a.subset(math.index(3, 0)),
-                        a.subset(math.index(4, 0)),
-                        a.subset(math.index(5, 0)),
-                     ]
+            // como o valor de L é [0,0,0,0,0,0], o resultado da multiplicação a seguir é sempre [0,0,0,0,0,0]
+            //var E = math.multiply(At,L); // multiplica a inversa pela transposta e armazena em E
+            // como o valor de E é [0,0,0,0,0,0], o resultado da multiplicação a seguir é sempre [0,0,0,0,0,0]
+            //var a = math.multiply(I,E); // multiplica E pela matriz com os valores de y e obtém a matriz de coeficientes
+            // var _a = [  a.subset(math.index(0, 0)),
+            //             a.subset(math.index(1, 0)),
+            //             a.subset(math.index(2, 0)),
+            //             a.subset(math.index(3, 0)),
+            //             a.subset(math.index(4, 0)),
+            //             a.subset(math.index(5, 0)),
+            // 
+            var _a = [a.u[0],a.u[1],a.u[2],a.u[3],a.u[4],a.u[5]];
             // após conhecer os coeficientes, calcula valor da f(x,y) como os valores de cada ponto
             // ao substituir com os valores de cada ponto do subdomínio
             var result = this.f_value( this.points, _a[0], _a[1], _a[2], _a[3], _a[4], _a[5] );
@@ -204,7 +218,7 @@
             var _maxerror = 0;
             for(var p in this.points){
                 let r = result[p];
-                let e = r - this.points[p].y;
+                let e = r;
                 _maxerror = ( e > _maxerror ) ? e: Math.abs(_maxerror);
             }
             //retorna erro calculado e coeficientes da redução
@@ -271,16 +285,21 @@
         }
         getGlobalFunction(){
             if (this.leaf){
-                var a = this._coef;
+                var a = this.coefs;
                  return a;
              } else {
                 //smath.add(mId, Ii);
                 //var sum = math.zeros(6, 1);
                 var sum = [0,0,0,0,0,0];
-                 var WNE = this.northeast.getGlobalFunction() || [0,0,0,0,0,0];
-                 var WNW = this.northwest.getGlobalFunction() || [0,0,0,0,0,0];
-                 var WSE = this.southeast.getGlobalFunction() || [0,0,0,0,0,0];
-                 var WSW = this.southwest.getGlobalFunction() || [0,0,0,0,0,0];
+                
+                 var WNE = this.northeast.getGlobalFunction();
+                 if(WNE.length < 6) WNE = [0,0,0,0,0,0];
+                 var WNW = this.northwest.getGlobalFunction();
+                 if(WNW.length < 6) WNW = [0,0,0,0,0,0];
+                 var WSE = this.southeast.getGlobalFunction();
+                 if(WSE.length < 6) WSE = [0,0,0,0,0,0];
+                 var WSW = this.southwest.getGlobalFunction();
+                 if(WSW.length < 6) WSW = [0,0,0,0,0,0];
                  for(var i=0; i<sum.length; i++){
                     sum[i] = WNE[i]+WNW[i]+WSE[i]+WSW[i]
                  }
