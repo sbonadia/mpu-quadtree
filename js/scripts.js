@@ -17,7 +17,7 @@
   if (!gl) {
     return;
   }
-  function main() {
+  function main(render_ms=false) {
     // pega WebGL context
     /** @type { HTMLCanvasElement } */
     // configura GLSL program
@@ -107,8 +107,14 @@
       // Desenha Geometria.
       //var primitiveType = gl.TRIANGLES;
       //var primitiveType = gl.LINE_STRIP;
-      var primitiveType = gl.LINES;
-      //var primitiveType = gl.POINTS;
+   
+     
+      if(render_ms){
+        var primitiveType = gl.LINES;
+      } else {
+        var primitiveType = gl.POINTS;
+      
+      }
       var offset = 0;
       //gl.drawArrays(primitiveType, offset, totalPoints);
 
@@ -122,7 +128,7 @@
   //console.log(m4);
 
   // Processa dados do TXT
-  function processDataFile(data){
+  function processDataFile(data, render_ms=false){
       //captura quantidade de pontos dada na primeira linha do conjunto de dados
       totalPoints = data[0]*1; 
       // inicia variáveis de limites máx e min dos eixos X Y Z
@@ -181,9 +187,8 @@
       }
       // coleta os pontos do qt para processar os MPUs
       qt.collectPoints(qt);
-      var ms = new marchsquare.MarchingSquare(minX,minY,maxX,maxY,128);
-      var pts = ms.render(qt);
-      qt.points = pts;
+      
+      if(render_ms) qt.points = geraMarchingSquare(qt,minX,minY,maxX,maxY);
       //console.log(pts);
       // coleta pontos para que delimitam os quadrantes do QuadTree.
       //var rect = qt.arrayBoundary_fn(); // teste
@@ -202,9 +207,14 @@
     return (qt);
     
   }
+  function geraMarchingSquare(points, minX,minY,maxX,maxY){
+    var ms = new marchsquare.MarchingSquare(minX,minY,maxX,maxY,128);
+      var pts = ms.render(points);
+      return pts;
+  }
   // recebe valor e direciona carregamento
   function informFileBox() {
-      var file_name = prompt("Qual o arquivo deseja abrir? ", "2torus");
+      var file_name = prompt("Qual o arquivo deseja abrir?\nClique em cancelar para gerar um cículo de pontos.", "2torus");
       if (file_name != null) {
         loadExternalTextFile(file_name)
       } else {
@@ -213,11 +223,15 @@
   }
   // carrega dados internos do círculo
   function loadInternalText(){
+    objectsAll = {};
     let text = drawCircle(10);
     let lines = text.split("\n"); // separa linhas e insere no Vetor
-    objectsAll = processDataFile(lines); // processa dados e monta no objeto
+    var is_mpu = confirm("Deseja executar mpu?");
+    objectsAll = processDataFile(lines, is_mpu); // processa dados e monta no objeto
     totalPoints = objectsAll.points.length;
-    main(); 
+    
+    main(is_mpu); 
+
   }
   //carrega arquivo de dados externo
   function loadExternalTextFile(file_name){
@@ -230,6 +244,7 @@
                   let allText = txtFile.responseText;
                   let lines = txtFile.responseText.split("\n"); // Will separate each line into an array
                   objectsAll = processDataFile(lines);
+                  //$("body").append("<button type='button' onclick='alert(\"Hello world!\")'>Click Me!</button>");
                   main(); 
               }
           }
@@ -310,5 +325,6 @@
         playing:playing,
         objectsAll:objectsAll,
         gl:gl,
+        loadInternalText: loadInternalText,
     };
   }));

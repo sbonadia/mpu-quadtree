@@ -33,18 +33,19 @@
 
         }
         globalFunction(point, qt){
-            var x = point.x;
-            var y = point.y;
             //var localWeights = qt.getLocalWeight(point);
             //var totalWeights = qt.getGlobalWeight(point);
-            
-            var a = qt.getGlobalFunction();  
-            //console.log(a)
             //var mpu = localWeights/totalWeights;
+            return qt.getGlobalFunction();
+        }
+        calculateGlobalFunction(point, a){
+            var x = point.x;
+            var y = point.y;
             //return Math.pow(y,2) + Math.pow(x,2) - Math.pow(10,2); // ## Círculo de raio 100 # a*x^2 + b*y^2 = c^2
             //return Math.pow(y,2) - Math.pow(x,3) + 3*x - 1.5;
             //return Math.pow((0.6*(Math.pow(x,2)+0.7*Math.pow(y,2))-1),3)-(1.8*Math.pow(x,2)*0.6*Math.pow(y,3)); // Heart: ( a*x^2 + b*y^2 -1 )^3 - c*x^2 * d*y^3 = 0
-            return (a[0] +a[1]*x +a[2]*y +a[3]*x*y +a[4]*x*x +a[5]*y*y)  
+            return 20+(a[0] +a[1]*x +a[2]*y +a[3]*x*y +a[4]*x*x +a[5]*y*y) 
+
         }
         render(qt){
             // 0 - vertice abaixo da faixa
@@ -61,13 +62,13 @@
 
             for(var x = this.minX; x < this.maxX; x += stepX){      // looping que percorre as linha
                 for(var y = this.minY; y < this.maxY; y += stepY){  // looping que percorre as coluna
-                    //this.func  = this.globalFunction({x:x,y:y},qt)()
-                    //console.log(this.globalFunction( { x:x,y:y },qt ));
-                    var z1 = 10+this.globalFunction( { x:x,y:y },qt );				// canto inferior esquerdo
-                    var z2 = 10+this.globalFunction( { x:x + stepX, y:y },qt );			// canto inferior direito
-                    var z4 = 10+this.globalFunction( { x:x + stepX, y:y + stepY },qt );	// canto superior direito
-                    var z8 = 10+this.globalFunction( { x:x, y:y + stepY },qt );			// canto superior esquerdo
-                    
+                    var coef  = this.globalFunction({x:x,y:y},qt);
+                   
+                    var z1 = this.calculateGlobalFunction( { x:x,y:y }, coef );				// canto inferior esquerdo
+                    var z2 = this.calculateGlobalFunction( { x:x + stepX, y:y }, coef );			// canto inferior direito
+                    var z4 = this.calculateGlobalFunction( { x:x + stepX, y:y + stepY }, coef );	// canto superior direito
+                    var z8 = this.calculateGlobalFunction( { x:x, y:y + stepY }, coef );			// canto superior esquerdo
+                    //console.log(z1);
                     //var z1 = this.func( x,y);				// canto inferior esquerdo
                     //var z2 = this.func( x + stepX, y );	    // canto inferior direito
                     //var z4 = this.func( x + stepX, y + stepY ); 	// canto superior direito
